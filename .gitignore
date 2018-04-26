@@ -50,3 +50,17 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+
+# STM32
+*.s
+*.crf
+*.lnp
+*.lst
+*.dep
+*.axf
+*.htm
+*.bin
+*Debug*
+*build/*
+.tags*
