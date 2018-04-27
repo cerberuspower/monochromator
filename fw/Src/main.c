@@ -40,7 +40,7 @@
 #include "stm32f3xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "motor.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -104,8 +104,11 @@ int main(void)
     while (1)
     {
         /* USER CODE END WHILE */
-
         /* USER CODE BEGIN 3 */
+        motor_dir_front();
+        motor_steps(10000);
+        motor_dir_reverse();
+        motor_steps(10000);
     }
     /* USER CODE END 3 */
 } /* main */
