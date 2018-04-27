@@ -4,6 +4,7 @@
 
 # ------------------------------------------------
 # Generic Makefile (based on gcc)
+# Modified for C++
 #
 # ChangeLog :
 #	2017-02-10 - Several enhancements + project update mode
@@ -22,7 +23,7 @@ TARGET = monochromator
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT = -Os
 
 
 #######################################
@@ -30,15 +31,16 @@ OPT = -Og
 #######################################
 # source path
 SOURCES_DIR =  \
+Application \
+Application/User \
+Application/User/Src \
 Application/User/Src/main.c \
 Application/User/Src/stm32f3xx_hal_msp.c \
-Application/User/Src \
-Application \
-Drivers/CMSIS \
-Drivers/STM32F3xx_HAL_Driver \
-Application/User \
+Application/User/Src/stm32f3xx_it.c \
 Drivers \
-Application/User/Src/stm32f3xx_it.c
+Drivers/CMSIS \
+Drivers/STM32F3xx_HAL_Driver
+
 
 # firmware library path
 PERIFLIB_PATH = 
@@ -51,33 +53,32 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_tim.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart_ex.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c \
-Src/stm32f3xx_hal_msp.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_tim_ex.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c \
-Src/system_stm32f3xx.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_cortex.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c \
-Src/main.c \
-Src/stm32f3xx_it.c \
-Src/main.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c \
-Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_dma.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_tim.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_tim_ex.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart.c \
+Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart_ex.c \
+Src/main.c \
 Src/stm32f3xx_hal_msp.c \
-Src/stm32f3xx_it.c  
+Src/stm32f3xx_it.c \
+Src/system_stm32f3xx.c
+
 
 # ASM sources
 ASM_SOURCES =  \
 startup_stm32f303xe.s
+
 
 
 ######################################
@@ -89,13 +90,13 @@ PERIFLIB_SOURCES =
 #######################################
 # binaries
 #######################################
-BINPATH = 
+BINPATH = /opt/gcc-arm-none-eabi/bin/
 PREFIX = arm-none-eabi-
-CC = $(BINPATH)/$(PREFIX)gcc
-AS = $(BINPATH)/$(PREFIX)gcc -x assembler-with-cpp
-CP = $(BINPATH)/$(PREFIX)objcopy
-AR = $(BINPATH)/$(PREFIX)ar
-SZ = $(BINPATH)/$(PREFIX)size
+CC = $(BINPATH)$(PREFIX)gcc
+AS = $(BINPATH)$(PREFIX)gcc -x assembler-with-cpp
+CP = $(BINPATH)$(PREFIX)objcopy
+AR = $(BINPATH)$(PREFIX)ar
+SZ = $(BINPATH)$(PREFIX)size
 HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
  
@@ -118,10 +119,12 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 # AS defines
 AS_DEFS = 
 
+
 # C defines
 C_DEFS =  \
--DUSE_HAL_DRIVER \
--DSTM32F303xE
+-DSTM32F303xE \
+-DUSE_HAL_DRIVER
+
 
 
 # AS includes
@@ -129,11 +132,12 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
--IInc \
+-IDrivers/CMSIS/Device/ST/STM32F3xx/Include \
+-IDrivers/CMSIS/Include \
 -IDrivers/STM32F3xx_HAL_Driver/Inc \
 -IDrivers/STM32F3xx_HAL_Driver/Inc/Legacy \
--IDrivers/CMSIS/Device/ST/STM32F3xx/Include \
--IDrivers/CMSIS/Include
+-IInc
+
 
 
 # compile gcc flags
@@ -176,20 +180,20 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	$(AS) -c $(CFLAGS) $< -o $@
+	@$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	$(SZ) $@
+	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(HEX) $< $@
+	@$(HEX) $< $@
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
+	@$(BIN) $< $@	
 	
 $(BUILD_DIR):
 	mkdir $@		
@@ -204,5 +208,14 @@ clean:
 # dependencies
 #######################################
 -include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
+
+#######################################
+# flash
+#######################################
+flash:
+	@/home/wykys/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
+
+build_and_flash: all
+	@/home/wykys/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=SWD reset=HWrst -w build/$(TARGET).bin 0x08000000 -v -rst
 
 # *** EOF ***
