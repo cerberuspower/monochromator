@@ -1072,13 +1072,13 @@ Wire Wire Line
 Wire Wire Line
 	10200 3200 10050 3200
 Text Label 10050 2900 0    50   ~ 0
-B2
-Text Label 10050 3000 0    50   ~ 0
-B1
-Text Label 10050 3100 0    50   ~ 0
-A1
-Text Label 10050 3200 0    50   ~ 0
 A2
+Text Label 10050 3000 0    50   ~ 0
+A1
+Text Label 10050 3100 0    50   ~ 0
+B1
+Text Label 10050 3200 0    50   ~ 0
+B2
 Wire Wire Line
 	10200 3400 9500 3400
 Wire Wire Line
