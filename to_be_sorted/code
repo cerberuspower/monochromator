@@ -1,0 +1,56 @@
+/* USER CODE BEGIN PV */
+/* Private variables ---------------------------------------------------------*/
+uint16_t nanometer;
+uint16_t tenth_of_nanometer;
+uint16_t hundredth_of_nanometer;
+uint16_t thousandth_of_nanometer;
+uint16_t MAX_WVL;
+uint16_t MIN_WVL;
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
+
+/* USER CODE BEGIN PFP */
+/* Private function prototypes -----------------------------------------------*/
+
+/* USER CODE END PFP */
+
+/* USER CODE BEGIN 0 */
+void GoToMinWVL(){
+	uint32_t i;
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_0,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_0,GPIO_PIN_SET);
+	while(1){
+			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_4);
+			for (i=0; i<259; i++);
+			}
+}
+uint32_t GoTOMaxWVLandCount(void){
+	uint32_t STEP_COUNT;
+	uint32_t i;
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_0,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_0,GPIO_PIN_RESET);
+	while(1){
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_4);
+		for (i=0; i<259; i++);
+		STEP_COUNT++;
+		}
+	return STEP_COUNT;	
+}
+void calculate(uint32_t number_of_steps){
+nanometer=number_of_steps/(MIN_WVL-MAX_WVL);
+tenth_of_nanometer=nanometer/10;
+hundredth_of_nanometer=tenth_of_nanometer/10;
+thousandth_of_nanometer=hundredth_of_nanometer/10;
+}
+void autocalibration(void){
+	uint32_t i; uint32_t number_of_steps;
+	if(stop1!=0 and stop2!=0)
+		GoToMinWVL();
+	  calculate(number_of_steps);
+}
