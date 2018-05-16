@@ -39,20 +39,19 @@ class FloatInput(TextInput):
 
 class MyApp(App):
     #------------------GLOBALS---------------------
-    global connection_flag
-    global get_wave_value
-    global slider_value
-    #--------SET Globals startup values------------
-    connection_flag=False
-    slider_value=0
+
+    #--------SET Globals startup variables------------
+    connection_flag = False
+    slider_value = 0
+    kill_event = threading.Event()
     #----------FUNCTIONS-------------
     def read(self,kill_event, x):
-        kill_event.clear()
+        self.kill_event.clear()
         print('reading thread run')
         tmp = ''
         raw = []
-        while not kill_event.is_set():
-            buf = ser.read_byte()
+        while not self.kill_event.is_set():
+            buf = self.ser.read_byte()
             if type(buf) is int:
                 if buf != ord('\n') and buf != ord('\r'):
                     tmp += chr(buf)
@@ -69,77 +68,61 @@ class MyApp(App):
         print("kill thread")
 
     def COM_select(self,x):
-        global connection_flag
-        global ser
-        global kill_event
-        if(connection_flag==True):
-            kill_event.set()
-            time.sleep(0.02)
-            ser.close_connection()
+        self.demand_close()
         print(x)
-        kill_event = threading.Event()
-        kill_event.clear()
-        ser = uart(baudrate=9600, name=x)
-        connection_flag=True
-        thread = threading.Thread(target=self.read, args=(kill_event, "task"))
+        self.kill_event.clear()
+        self.ser = uart(baudrate=9600, name=x)
+        self.connection_flag=True
+        thread = threading.Thread(target=self.read, args=(self.kill_event, "task"))
         thread.start()
     def demand_close(self,*instance):
-        global connection_flag
-        global ser
-        global kill_event
-        if(connection_flag==True):
-            kill_event.set()
+        if(self.connection_flag==True):
+            self.kill_event.set()
             time.sleep(0.02)
-            ser.close_connection()
-        else:
-            print("Can't close connection: no connection open")
-        connection_flag=False
+            self.ser.close_connection()
+            self.connection_flag=False
     #--------------------------------
     def on_text(self,instance, value):
-        global wavelength_value
-        wavelength_value=value
+        self.wavelength_value=value
     def data_send(self,instnace):
-        global wavelength_value
-        if(wavelength_value):
-            value=int(float(wavelength_value)*1000)
-            if(connection_flag==True):
-                ser.writeword("xgo_to%06d"%value)
+        if(self.connection_flag==True):
+            if(self.wavelength_value):
+                value=int(float(self.wavelength_value)*1000)
+                self.ser.writeword("xgo_to%06d"%value)
 
     def calibration(self,*instance):
-        if(connection_flag==True):
-            ser.writeword("xaucal000000")
+        if(self.connection_flag==True):
+            self.ser.writeword("xaucal000000")
         else:
             print("\n\rCan't send calibration request: no connection open\n\r")
     def OnGetWavelengthValue(self,instance):
-        if(connection_flag==True):
-            ser.writeword("xgetpo000000")
+        if(self.connection_flag==True):
+            self.ser.writeword("xgetpo000000")
 
     def Go_Up(self,instance):
-        global slider_value
-        if(connection_flag==True):
-            if(slider_value==1):
-                ser.writeword("xgo_up001000")
-            elif(slider_value==2):
-                ser.writeword("xgo_up000100")
-            elif(slider_value==3):
-                ser.writeword("xgo_up000010")
-            elif(slider_value==4):
-                ser.writeword("xgo_up000001")
+        if(self.connection_flag==True):
+            if(self.slider_value==1):
+                self.ser.writeword("xgo_up001000")
+            elif(self.slider_value==2):
+                self.ser.writeword("xgo_up000100")
+            elif(self.slider_value==3):
+                self.ser.writeword("xgo_up000010")
+            elif(self.slider_value==4):
+                self.ser.writeword("xgo_up000001")
             else:
-                ser.writeword("xgo_up001000")
+                self.ser.writeword("xgo_up001000")
     def Go_Down(self,instance):
-        global slider_value
-        if(connection_flag==True):
-            if(slider_value==1):
-                ser.writeword("xgo_dw001000")
-            elif(slider_value==2):
-                ser.writeword("xgo_dw000100")
-            elif(slider_value==3):
-                ser.writeword("xgo_dw000010")
-            elif(slider_value==4):
-                ser.writeword("xgo_dw000001")
+        if(self.connection_flag==True):
+            if(self.slider_value==1):
+                self.ser.writeword("xgo_dw001000")
+            elif(self.slider_value==2):
+                self.ser.writeword("xgo_dw000100")
+            elif(self.slider_value==3):
+                self.ser.writeword("xgo_dw000010")
+            elif(self.slider_value==4):
+                self.ser.writeword("xgo_dw000001")
             else:
-                ser.writeword("xgo_dw001000")
+                self.ser.writeword("xgo_dw001000")
 
     #--------------------------------------
     def build(self):
@@ -172,8 +155,7 @@ class MyApp(App):
         slider_label=Label(text="Move by: nanometer", markup=True, pos_hint={'x': 0, 'center_y': 1.5}, size_hint=(1, 1))
         #----------------------------
         def OnSliderValueChange(instance,value):
-            global slider_value
-            slider_value=value
+            self.slider_value=value
             if(value==1):
                 slider_label.text ="Move by: nanometer"
             elif(value==2):
@@ -226,12 +208,6 @@ class MyApp(App):
         main_layout.add_widget(inputs_layout)
         return main_layout
     def on_stop(self):
-        global kill_event
-        global connection_flag
-        if(connection_flag==True):
-            kill_event.set()
-            self.demand_close()
+        self.demand_close()
 
 MyApp().run()
-
-
