@@ -38,11 +38,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f3xx_hal.h"
-#include <stdlib.h>
-#include <stdbool.h>
 
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h> 
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -51,14 +50,15 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint8_t txBuffer[]="Buffer TEST\n\r";
+uint8_t txBuffer2[]="\r\nCommand not recognized\r\n";
 uint8_t rxBuffer[12];
 char  aBuffer[12];
 bool rx_flag=false;
 bool calibration_flag=false;
-uint16_t nanometer;
-uint16_t tenth_of_nanometer;
-uint16_t hundredth_of_nanometer;
-uint16_t thousandth_of_nanometer;
+const uint16_t thousandth_of_nanometer=32;
+uint16_t nanometer=32000;
+uint16_t tenth_of_nanometer=3200;
+uint16_t hundredth_of_nanometer=320;
 uint16_t MAX_WVL=999;
 uint16_t MIN_WVL=100;
 uint32_t current_position;
@@ -72,6 +72,7 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 char *ltoa(long N, char *str, int base);
+void step(void);
 bool buffer_analyze(bool flag,char buffer[10]);
 
 /* USER CODE END PFP */
@@ -112,6 +113,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 	HAL_UART_Transmit_IT(&huart2,(uint8_t *)txBuffer,sizeof(txBuffer));
+	uint32_t testnum=999999;
+	uint32_t testnum2;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -121,9 +124,8 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-		HAL_UART_Transmit_IT(&huart2,(uint8_t *)txBuffer,sizeof(txBuffer));
+		step();
     HAL_UART_Receive_IT(&huart2,rxBuffer,12);
-		HAL_Delay(1000);
 		rx_flag=buffer_analyze(rx_flag,aBuffer);
 
 
@@ -262,8 +264,7 @@ static void MX_GPIO_Init(void)
 void step(void){
 	uint32_t i;
 	HAL_GPIO_TogglePin(STEP_GPIO_Port,STEP_Pin);
-	HAL_Delay(10);
-	for (i=0; i<259; i++);
+	for(i=0;i<360;i++);
 
 }
 
@@ -272,63 +273,38 @@ void GoToMinWVL(){
 	uint32_t i;
 	HAL_GPIO_WritePin(DIR_GPIO_Port,DIR_Pin,GPIO_PIN_SET);
 	HAL_GPIO_WritePin(ENA_GPIO_Port,ENA_Pin,GPIO_PIN_RESET);
-	while(HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==1){
+	while(HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==1)
+	{
 		step();
-			}
+	}
 }
 //-----------------------------
-uint32_t GoToMaxWVLandCount(void){
-	uint32_t STEP_COUNT;
-	uint32_t i;
-	HAL_GPIO_WritePin(DIR_GPIO_Port,DIR_Pin,GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(ENA_GPIO_Port,ENA_Pin,GPIO_PIN_RESET);
-	while(HAL_GPIO_ReadPin(END_STOP2_GPIO_Port,END_STOP2_Pin)==1){
-		step();
-		STEP_COUNT++;
-		}
-	return STEP_COUNT;	
-}
-//--------------------------------
-uint32_t GoToMinWVLandCount(void){
-	uint32_t STEP_COUNT;
+void GoToMaxWVL(){
 	uint32_t i;
 	HAL_GPIO_WritePin(DIR_GPIO_Port,DIR_Pin,GPIO_PIN_SET);
 	HAL_GPIO_WritePin(ENA_GPIO_Port,ENA_Pin,GPIO_PIN_RESET);
-	while(HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==1){
+	while(HAL_GPIO_ReadPin(END_STOP2_GPIO_Port,END_STOP2_Pin)==1){
 		step();
-		STEP_COUNT++;
-		}
-	return STEP_COUNT;	
+			}
 }
-//---------------------------------------------
-void calculate(uint32_t number_of_steps){
-char sbuffer[6];
-nanometer=number_of_steps/(MIN_WVL-MAX_WVL);
-tenth_of_nanometer=nanometer/10;
-hundredth_of_nanometer=tenth_of_nanometer/10;
-thousandth_of_nanometer=hundredth_of_nanometer/10;
-sprintf(sbuffer,"%d",nanometer);
-HAL_UART_Transmit(&huart2,sbuffer, sizeof(sbuffer),1000);
-}
+
 //-------------------------------------------
 void autocalibration(void){
-	uint32_t i; uint32_t number_of_steps;	
+	uint32_t i;
 	if(HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==1  && HAL_GPIO_ReadPin(END_STOP2_GPIO_Port,END_STOP2_Pin)==1){
 		GoToMinWVL();
-		number_of_steps=GoToMaxWVLandCount();
-	  calculate(number_of_steps);
+		GoToMaxWVL();
 		current_position=MAX_WVL*1000;
 	}
 	else if (HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==1  && HAL_GPIO_ReadPin(END_STOP2_GPIO_Port,END_STOP2_Pin)==0)
 	{
-		number_of_steps=GoToMinWVLandCount();
-		calculate(number_of_steps);
+		
+		GoToMinWVL();
 		current_position=MIN_WVL*1000;
 	}
 	else if (HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==0  && HAL_GPIO_ReadPin(END_STOP2_GPIO_Port,END_STOP2_Pin)==1)
 	{
-		number_of_steps=GoToMaxWVLandCount();
-	  calculate(number_of_steps);
+		GoToMaxWVL();
 		current_position=MAX_WVL*1000;
 	}
 	else if (HAL_GPIO_ReadPin(END_STOP1_GPIO_Port,END_STOP1_Pin)==0  && HAL_GPIO_ReadPin(END_STOP2_GPIO_Port,END_STOP2_Pin)==0)
@@ -341,6 +317,10 @@ void autocalibration(void){
 
 //-----------------------------------
 void steps(uint32_t no_of_steps, bool dir){
+	char sbuffer[12];
+	sprintf(sbuffer,"%d",no_of_steps);	
+	HAL_Delay(500);
+	HAL_UART_Transmit(&huart2,(uint8_t *)sbuffer,sizeof(sbuffer),100);
 	HAL_GPIO_WritePin(ENA_GPIO_Port,ENA_Pin,GPIO_PIN_RESET);
 	if(dir==true){
 		HAL_GPIO_WritePin(DIR_GPIO_Port,DIR_Pin,GPIO_PIN_RESET);
@@ -378,6 +358,15 @@ void go_to_wavelength(uint32_t go_to_position)
 	}
 	else if(position_diference==0);
 }
+	
+//----------------------set position--------------------
+void set_position(uint32_t wavelength){
+	char sbuffer[12];
+	current_position=wavelength;
+	sprintf(sbuffer,"%d",current_position);	
+	HAL_Delay(500);
+	HAL_UART_Transmit(&huart2,(uint8_t *)sbuffer,sizeof(sbuffer),100);
+}
 //----------------------GO_UP--------------------------
 void go_up(uint32_t position_modifier){
 	steps(position_modifier*thousandth_of_nanometer,true);
@@ -390,15 +379,18 @@ void go_down(uint32_t position_modifier){
 
 //-------------------GET Position----------------------
 void get_current_position(void){
-	sprintf(txBuffer,"%d",current_position);
-	HAL_UART_Transmit(&huart2,(uint8_t *)txBuffer,sizeof(txBuffer),1000);
+	unsigned char sbuffer[12];
+	sprintf(sbuffer,"%d",current_position);
+	
+	HAL_UART_Transmit(&huart2,(uint8_t *)sbuffer,sizeof(sbuffer),1000);
 }
 //------------------Buffer analyze---------------------
 bool buffer_analyze(bool flag,char buffer[12]){
 	uint8_t i;
+	uint32_t end_of_packet_numeric;
 	char  cmd[5];
 	char  nm_1[3];
-	char end_of_packet[4];
+	char end_of_packet[6];
 	char c[2]="pe";
 	char sbuffer[6];
 	if(flag==true)
@@ -409,25 +401,21 @@ bool buffer_analyze(bool flag,char buffer[12]){
 			{
 				cmd[i-1]=buffer[i];
 			}
-			for(i=0;i<=5;i++)
+			for(i=0;i<6;i++)
 			{
 				end_of_packet[i]=buffer[i+6];			
 			}
+			end_of_packet_numeric=atol(end_of_packet);
 			HAL_UART_Transmit(&huart2,cmd, sizeof(cmd),1000);
-			if(strcmp(cmd,"aucal")==0) autocalibration();
-			else if(strcmp(cmd,"getpo")==0)get_current_position();
-			else if(strcmp(cmd,"go_up")==0)go_up(atol(end_of_packet));
-			else if(strcmp(cmd,"go_dw")==0)go_down(atol(end_of_packet));
-			else if(strcmp(cmd,"go_to")==0)//go_to_wavelength(atol(end_of_packet));
-			{	
-				go_to_wavelength(atol(end_of_packet));
-				sprintf(sbuffer,"%d",atol(nm_1));
-				HAL_UART_Transmit(&huart2,sbuffer, sizeof(sbuffer),1000);
-				HAL_UART_Transmit(&huart2,nm_1, sizeof(nm_1),1000);
-			}
+			
+			if(strncmp(cmd,"st_ps",5)==0)set_position(end_of_packet_numeric);
+			else if(strncmp(cmd,"aucal",5)==0) autocalibration();
+			else if(strncmp(cmd,"getpo",5)==0)get_current_position();
+			else if(strncmp(cmd,"go_up",5)==0)go_up(atol(end_of_packet));
+			else if(strncmp(cmd,"go_dw",5)==0)go_down(atol(end_of_packet));
+			else if(strncmp(cmd,"go_to",5)==0)go_to_wavelength(end_of_packet_numeric);
 			else{
-				sprintf(txBuffer,"\r\nCommand not recognized\r\n");
-				HAL_UART_Transmit_IT(&huart2,(uint8_t *)txBuffer,sizeof(txBuffer));
+				HAL_UART_Transmit(&huart2,(uint8_t *)txBuffer2,sizeof(txBuffer2),100);
 			}
 		}
 		else HAL_UART_Transmit_IT(&huart2,"\r\nError: Transmision error\r\n",28);
